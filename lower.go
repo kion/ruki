@@ -470,16 +470,34 @@ func lowerOrderByField(g *orderByField) OrderByClause {
 // --- literal helpers ---
 
 func unquoteString(s string) string {
-	// strip surrounding quotes and unescape
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		unquoted, err := strconv.Unquote(s)
-		if err == nil {
-			return unquoted
-		}
-		// fallback: just strip quotes
-		return s[1 : len(s)-1]
+	if len(s) < 2 || s[0] != '"' || s[len(s)-1] != '"' {
+		return s
 	}
-	return s
+	body := s[1 : len(s)-1]
+	var b strings.Builder
+	b.Grow(len(body))
+	for {
+		i := strings.IndexByte(body, '\\')
+		if i < 0 {
+			b.WriteString(body)
+			return b.String()
+		}
+		b.WriteString(body[:i])
+		body = body[i:]
+		r, multibyte, tail, err := strconv.UnquoteChar(body, '"')
+		if err != nil {
+			// unknown escapes stay literal, so stray backslashes (e.g. Windows paths) are not errors
+			b.WriteByte('\\')
+			body = body[1:]
+			continue
+		}
+		if multibyte {
+			b.WriteRune(r)
+		} else {
+			b.WriteByte(byte(r)) //nolint:gosec // r is a single byte when multibyte is false
+		}
+		body = tail
+	}
 }
 
 func parseDateLiteral(s string) (Expr, error) {

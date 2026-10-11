@@ -438,6 +438,46 @@ func TestLower_TriggerDeny(t *testing.T) {
 	}
 }
 
+func TestLower_TriggerDenyMultiLine(t *testing.T) {
+	p := newTestParser()
+
+	trig, err := p.ParseTrigger(`before delete deny "cannot \"delete\".` + "\n" + `ask an admin"`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if trig.Deny == nil {
+		t.Fatal("expected non-nil deny")
+	}
+	if want := "cannot \"delete\".\nask an admin"; *trig.Deny != want {
+		t.Errorf("expected %q, got %q", want, *trig.Deny)
+	}
+}
+
+func TestLower_MultiLineStringLiteral(t *testing.T) {
+	p := newTestParser()
+
+	stmt, err := p.ParseStatement(`create title="T" description="one \"q\".` + "\n" + `two"`)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if stmt.Create == nil {
+		t.Fatal("expected create statement")
+	}
+	for _, a := range stmt.Create.Assignments {
+		if a.Field == "description" {
+			sl, ok := a.Value.(*StringLiteral)
+			if !ok {
+				t.Fatalf("expected StringLiteral, got %T", a.Value)
+			}
+			if want := "one \"q\".\ntwo"; sl.Value != want {
+				t.Errorf("expected %q, got %q", want, sl.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("description assignment not found")
+}
+
 // TestUnquoteString exercises the unquoteString helper directly.
 func TestUnquoteString(t *testing.T) {
 	tests := []struct {
@@ -451,6 +491,13 @@ func TestUnquoteString(t *testing.T) {
 		{"empty quotes", `""`, ""},
 		{"single char", `"x"`, "x"},
 		{"invalid escape fallback", "\"bad\\qescape\"", "bad\\qescape"},
+		{"line break with escaped quote", `"one \"q\".` + "\n" + `two"`, "one \"q\".\ntwo"},
+		{"line break with \\n and \\\\", `"a` + "\n" + `b\nc\\d"`, "a\nb\nc\\d"},
+		{"CRLF kept raw", `"a` + "\r\n" + `b"`, "a\r\nb"},
+		{"raw tab", `"a` + "\t" + `b"`, "a\tb"},
+		{"mixed known and unknown escapes", `"a \"b\" \q"`, `a "b" \q`},
+		{"single-quote escape stays literal", `"it\'s"`, `it\'s`},
+		{"numeric escapes", `"\x41\u00e9\U0001F600\101"`, "Aé\U0001F600A"},
 	}
 
 	for _, tt := range tests {

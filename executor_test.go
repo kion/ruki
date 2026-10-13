@@ -4715,20 +4715,27 @@ func TestPhase4_AbsentCustomIsEmptyIsTrue(t *testing.T) {
 	}
 }
 
-func TestPhase4_AbsentOrderByHardErrorsCustom(t *testing.T) {
+func TestAbsentSecondaryOrderBySortsLastWithinGroup(t *testing.T) {
 	e := newCustomExecutor()
 	p := newCustomParser2()
 
 	tikis := []*tikiFixture{
-		{ID: "T1", Title: "A", Status: "ready", CustomFields: map[string]interface{}{"score": 10}},
-		{ID: "T2", Title: "B", Status: "ready"},
+		{ID: "T1", Title: "A", Status: "ready", CustomFields: map[string]interface{}{"priority2": "p1", "severity": "high"}},
+		{ID: "T2", Title: "B", Status: "ready", CustomFields: map[string]interface{}{"priority2": "p1"}},
+		{ID: "T3", Title: "C", Status: "ready", CustomFields: map[string]interface{}{"priority2": "p1", "severity": "low"}},
+		{ID: "T4", Title: "D", Status: "ready", CustomFields: map[string]interface{}{"priority2": "p0"}},
 	}
-	stmt, err := p.ParseStatement(`select order by score`)
+	stmt, err := p.ParseStatement(`select order by priority2, severity`)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
-	if _, err := e.testExec(stmt, tikis); err == nil {
-		t.Fatal("expected hard-error on absent score during order-by")
+	result, err := e.testExec(stmt, tikis)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	want := []string{"T4", "T3", "T1", "T2"}
+	if got := tikiIDs(result.Select.Tikis); !reflect.DeepEqual(got, want) {
+		t.Errorf("got %v, want %v", got, want)
 	}
 }
 

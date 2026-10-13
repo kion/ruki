@@ -510,21 +510,35 @@ func TestPhase4_NotInAbsentListIsTrue(t *testing.T) {
 
 // --- absent-sort ordering ---
 
-func TestPhase4_AbsentOrderByHardErrors(t *testing.T) {
-	// Phase 4: `order by priority` on an input set containing a tiki
-	// without priority hard-errors during sort-key extraction.
+func TestAbsentOrderBySortsLast(t *testing.T) {
+	// absent sort keys behave like nil ones: last ascending, first descending
 	e := newTestExecutor()
 	p := newTestParser()
 
 	plain := &tikiFixture{ID: "PLAIN1", Title: "no priority"}
-	p1 := &tikiFixture{ID: "PRI001", Title: "p1", Status: "ready",
-		WorkflowFrontmatter: map[string]interface{}{"status": "ready", "priority": 1}}
+	low := &tikiFixture{ID: "PRILOW", Title: "low", Status: "ready",
+		CustomFields: map[string]interface{}{"priority": "low"}}
+	high := &tikiFixture{ID: "PRIHIG", Title: "high", Status: "ready",
+		CustomFields: map[string]interface{}{"priority": "high"}}
 
-	stmt, err := p.ParseStatement(`select order by priority`)
-	if err != nil {
-		t.Fatalf("parse: %v", err)
+	tests := []struct {
+		query string
+		want  []string
+	}{
+		{`select order by priority`, []string{"PRIHIG", "PRILOW", "PLAIN1"}},
+		{`select order by priority desc`, []string{"PLAIN1", "PRILOW", "PRIHIG"}},
 	}
-	if _, err := e.testExec(stmt, []*tikiFixture{plain, p1}); err == nil {
-		t.Fatal("expected hard-error on absent priority during order-by")
+	for _, tt := range tests {
+		stmt, err := p.ParseStatement(tt.query)
+		if err != nil {
+			t.Fatalf("parse %q: %v", tt.query, err)
+		}
+		result, err := e.testExec(stmt, []*tikiFixture{plain, low, high})
+		if err != nil {
+			t.Fatalf("%q: %v", tt.query, err)
+		}
+		if got := tikiIDs(result.Select.Tikis); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("%q: got %v, want %v", tt.query, got, tt.want)
+		}
 	}
 }

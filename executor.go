@@ -1660,8 +1660,8 @@ func subtractValues(left, right interface{}) (interface{}, error) {
 // --- sorting ---
 
 func (e *Executor) sortTikis(tikis []Document, clauses []OrderByClause) error {
-	// Pre-extract all sort keys so a missing field surfaces as an error
-	// before sort.Slice starts swapping.
+	// Pre-extract all sort keys so an unknown field or a bad value surfaces
+	// as an error before sort.Slice starts swapping.
 	specs := make([]FieldSpec, len(clauses))
 	for i, c := range clauses {
 		fs, ok := e.schema.Field(c.Field)
@@ -1675,6 +1675,11 @@ func (e *Executor) sortTikis(tikis []Document, clauses []OrderByClause) error {
 		row := make([]interface{}, len(clauses))
 		for j, c := range clauses {
 			v, err := e.extractField(t, c.Field)
+			var absent *AbsentFieldError
+			if errors.As(err, &absent) {
+				// sorting as nil lets views sort on optional fields, such as an estimate
+				v, err = nil, nil
+			}
 			if err != nil {
 				return fmt.Errorf("order by %q: %w", c.Field, err)
 			}

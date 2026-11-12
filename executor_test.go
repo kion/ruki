@@ -122,6 +122,34 @@ func TestExecuteSelectAll(t *testing.T) {
 	}
 }
 
+func TestExecuteSelectStarMarksProjection(t *testing.T) {
+	e := newTestExecutor()
+	p := newTestParser()
+	tikis := makeTikis()
+
+	for _, tc := range []struct {
+		query string
+		star  bool
+	}{
+		{"select *", true},
+		{`select * where status = "done"`, true},
+		{"select", false},
+		{"select title", false},
+	} {
+		stmt, err := p.ParseStatement(tc.query)
+		if err != nil {
+			t.Fatalf("%s: parse: %v", tc.query, err)
+		}
+		result, err := e.testExec(stmt, tikis)
+		if err != nil {
+			t.Fatalf("%s: execute: %v", tc.query, err)
+		}
+		if result.raw.Select.Star != tc.star {
+			t.Errorf("%s: Star = %v, want %v", tc.query, result.raw.Select.Star, tc.star)
+		}
+	}
+}
+
 func TestExecuteSelectWithFields(t *testing.T) {
 	e := newTestExecutor()
 	p := newTestParser()

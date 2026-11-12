@@ -26,6 +26,7 @@ type ExprStmt struct {
 // SelectStmt represents "select [fields] [where <condition>] [order by ...] [limit N] [| run(...) | clipboard()]".
 type SelectStmt struct {
 	Fields  []string        // nil = all ("select" or "select *"); non-nil = specific fields
+	Star    bool            // written as "select *": the host may show more for it than for a bare "select"
 	Where   Condition       // nil = select all
 	OrderBy []OrderByClause // nil = unordered
 	Limit   *int            // nil = no limit; positive = max result count

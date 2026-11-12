@@ -110,6 +110,7 @@ type DeleteResult struct {
 type TikiProjection struct {
 	Tikis  []Document
 	Fields []string // user-requested fields; nil/empty = all fields
+	Star   bool     // the statement was written as "select *"
 }
 
 // Execute dispatches on the statement type and returns results.
@@ -221,6 +222,7 @@ func (e *Executor) executeSelect(sel *SelectStmt, tikis []Document) (*Result, er
 		Select: &TikiProjection{
 			Tikis:  filtered,
 			Fields: sel.Fields,
+			Star:   sel.Star,
 		},
 	}, nil
 }

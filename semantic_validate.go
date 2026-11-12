@@ -1164,6 +1164,7 @@ func cloneSelect(sel *SelectStmt) *SelectStmt {
 	}
 	out := &SelectStmt{
 		Fields:  fields,
+		Star:    sel.Star,
 		Where:   cloneCondition(sel.Where),
 		OrderBy: orderBy,
 	}

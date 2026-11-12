@@ -234,6 +234,9 @@ func TestLower_SelectStar(t *testing.T) {
 	if stmt.Select.Fields != nil {
 		t.Errorf("expected nil fields for select *, got %v", stmt.Select.Fields)
 	}
+	if !stmt.Select.Star {
+		t.Error("expected Star for select *")
+	}
 }
 
 // TestLower_SelectBare exercises bare select (no fields, no star).
@@ -246,6 +249,9 @@ func TestLower_SelectBare(t *testing.T) {
 	}
 	if stmt.Select.Fields != nil {
 		t.Errorf("expected nil fields for bare select, got %v", stmt.Select.Fields)
+	}
+	if stmt.Select.Star {
+		t.Error("expected no Star for bare select")
 	}
 }
 

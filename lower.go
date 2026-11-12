@@ -74,7 +74,7 @@ func lowerSelect(g *selectGrammar) (*SelectStmt, error) {
 		v := g.Limit.Value
 		limit = &v
 	}
-	return &SelectStmt{Fields: fields, Where: where, OrderBy: orderBy, Limit: limit}, nil
+	return &SelectStmt{Fields: fields, Star: g.Star != nil, Where: where, OrderBy: orderBy, Limit: limit}, nil
 }
 
 func lowerPipeTarget(g *pipeTargetGrammar) (*PipeAction, error) {

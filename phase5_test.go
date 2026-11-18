@@ -233,8 +233,8 @@ func TestPhase5_DependsOnRejectsNonBareID(t *testing.T) {
 	}
 	if _, err := e.testExec(stmt, tikis); err == nil {
 		t.Fatal("expected error for non-bare dependsOn id")
-	} else if !strings.Contains(err.Error(), "bare document id") {
-		t.Fatalf("expected bare-id error, got: %v", err)
+	} else if !strings.Contains(err.Error(), "not a valid document id") {
+		t.Fatalf("expected invalid-id error, got: %v", err)
 	}
 }
 

@@ -488,7 +488,7 @@ func coerceCustomFieldValue(fs FieldSpec, val interface{}) (interface{}, error) 
 		}
 		ref := strings.ToUpper(strings.TrimSpace(s))
 		if !idfmt.IsValidID(ref) {
-			return nil, fmt.Errorf("%s reference %q is not a bare document id (expected %d uppercase alphanumeric chars)", fs.Name, ref, idfmt.IDLength)
+			return nil, fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12)", fs.Name, ref, idfmt.IDLength)
 		}
 		return ref, nil
 	default:
@@ -526,7 +526,7 @@ func normalizeRefList(ss []string) []string {
 func validateBareRefs(refs []string, fieldName string) error {
 	for _, r := range refs {
 		if !idfmt.IsValidID(r) {
-			return fmt.Errorf("%s reference %q is not a bare document id (expected %d uppercase alphanumeric chars)", fieldName, r, idfmt.IDLength)
+			return fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12)", fieldName, r, idfmt.IDLength)
 		}
 	}
 	return nil
@@ -1725,7 +1725,12 @@ type enumSortKey struct {
 	value string
 }
 
+type idSortKey string
+
 func sortKeyForField(fs FieldSpec, v interface{}) (interface{}, error) {
+	if v != nil && (fs.Type == ValueID || fs.Type == ValueRef) {
+		return idSortKey(normalizeToString(v)), nil
+	}
 	if fs.Type != ValueEnum || v == nil {
 		return v, nil
 	}
@@ -1748,6 +1753,9 @@ func compareForSort(a, b interface{}) int {
 	}
 
 	switch av := a.(type) {
+	case idSortKey:
+		bv, _ := b.(idSortKey)
+		return idfmt.Compare(string(av), string(bv))
 	case enumSortKey:
 		bv, _ := b.(enumSortKey)
 		if av.rank != bv.rank {

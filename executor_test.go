@@ -343,6 +343,31 @@ func TestExecuteSelectOrderBy(t *testing.T) {
 	}
 }
 
+func TestExecuteSelectOrderByIDIsNatural(t *testing.T) {
+	e := newTestExecutor()
+	p := newTestParser()
+	tikis := []*tikiFixture{
+		{ID: "MEM-10", Title: "ten", Status: "ready", DependsOn: []string{}},
+		{ID: "MEM-9", Title: "nine", Status: "ready", DependsOn: []string{}},
+		{ID: "ABC123", Title: "legacy", Status: "ready", DependsOn: []string{}},
+		{ID: "DB-2", Title: "db", Status: "ready", DependsOn: []string{}},
+	}
+	stmt, err := p.ParseStatement("select order by id")
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	result, err := e.testExec(stmt, tikis)
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	want := []string{"ABC123", "DB-2", "MEM-9", "MEM-10"}
+	for i, wantID := range want {
+		if got := result.Select.Tikis[i].ID; got != wantID {
+			t.Errorf("tiki[%d].ID = %q, want %q", i, got, wantID)
+		}
+	}
+}
+
 func TestExecuteSelectNoOrderByPreservesInputOrder(t *testing.T) {
 	e := newTestExecutor()
 	p := newTestParser()

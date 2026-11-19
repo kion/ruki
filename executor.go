@@ -488,7 +488,7 @@ func coerceCustomFieldValue(fs FieldSpec, val interface{}) (interface{}, error) 
 		}
 		ref := strings.ToUpper(strings.TrimSpace(s))
 		if !idfmt.IsValidID(ref) {
-			return nil, fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12)", fs.Name, ref, idfmt.IDLength)
+			return nil, fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12, ABC_12 or ABC12)", fs.Name, ref, idfmt.IDLength)
 		}
 		return ref, nil
 	default:
@@ -526,7 +526,7 @@ func normalizeRefList(ss []string) []string {
 func validateBareRefs(refs []string, fieldName string) error {
 	for _, r := range refs {
 		if !idfmt.IsValidID(r) {
-			return fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12)", fieldName, r, idfmt.IDLength)
+			return fmt.Errorf("%s reference %q is not a valid document id (expected %d uppercase letters or digits, or a prefixed id such as ABC-12, ABC_12 or ABC12)", fieldName, r, idfmt.IDLength)
 		}
 	}
 	return nil
